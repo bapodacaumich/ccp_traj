@@ -141,3 +141,49 @@ void enforce_station_keepout(const std::vector<std::vector<std::vector<float>>>&
     displayProgressBar(1.0);
     std::cout << std::endl;
 }
+
+casadi::MX f(const casadi::MX& x, const casadi::MX& u) {
+    float m_I = 5.75f; // inspector mass (kg)
+    float mu = 3.986e14f; // standard gravitational parameter
+    float a = 6.6e6f; // semi-major axis of international space station orbit
+    float n = sqrt(mu / (a * a * a)); // mean motion of ISS -- orbital rate of ISS
+
+    return casadi::MX::vertcat({
+        x(3),
+        x(4),
+        x(5),
+        3 * n * n * x(0) + 2 * n * x(4) + u(0) / m_I,
+        -2 * n * x(3) + u(1) / m_I,
+        -n * n * x(2) + u(2) / m_I
+    });
+}
+
+void integrate_runge_kutta(const casadi::MX& X, const casadi::MX& U, const std::vector<float>& dt, casadi::Opti& opti) {
+    size_t n_timesteps = U.size1();
+
+    casadi::Slice all;
+    for (size_t k = 0; k < n_timesteps; k++) {
+        casadi::MX k1 = f(X(k, all),                    U(k, all));
+        casadi::MX k2 = f(X(k, all) + dt[k] / 2 * k1,   U(k, all));
+        casadi::MX k3 = f(X(k, all) + dt[k] / 2 * k2,   U(k, all));
+        casadi::MX k4 = f(X(k, all) + dt[k] * k3,       U(k, all));
+
+        casadi::MX x_next = X(all, k) + dt[k] / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
+        opti.subject_to(X(k+1, all) == x_next);
+    }
+}
+
+casadi::MX compute_fuel_cost(const casadi::MX& U, const std::vector<float>& dt) {
+    float g0 = 9.81f; // m/s^2
+    float Isp = 80.0f; // s
+
+    size_t n_timesteps = U.size1();
+
+    casadi::MX total_impulse = 0.0f;
+    casadi::Slice all;
+    for (size_t k = 0; k < n_timesteps; k++) {
+        total_impulse += sumsqr(U(k, all) * dt[k] * dt[k]);
+    }
+    casadi::MX fuel_cost = total_impulse / g0 / g0 / Isp / Isp;
+    return fuel_cost;
+}

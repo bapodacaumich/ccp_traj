@@ -453,3 +453,47 @@ TimeInterval compute_time_intervals(const std::vector<std::vector<float>>& knot_
 
     return time_intervals;
 }
+
+casadi::DM linear_initial_path(const std::vector<std::vector<float>>& knot_points, const TimeInterval& time_intervals) {
+    std::vector<casadi::DM> X_init = {casadi::DM::vertcat({
+        knot_points[0][0],
+        knot_points[0][1],
+        knot_points[0][2]
+    })};
+
+    for (size_t i = 0; i < knot_points.size()-1; i++) {
+        std::vector<float> prev_pose = knot_points[i];
+        std::vector<float> cur_pose = knot_points[i+1];
+
+        size_t prev_idx = time_intervals.knot_idx[i];
+        size_t cur_idx = time_intervals.knot_idx[i+1];
+
+        // get cumulative time of each state within segment for interpolation
+        std::vector<float> dt_cumsum;
+        float cumsum = 0.0f;
+        for (size_t idx = prev_idx; idx < cur_idx; idx++) {
+            cumsum += time_intervals.dt[idx];
+            dt_cumsum.push_back(cumsum);
+        }
+
+        // get segment velocity
+        std::vector<float> segment_velocity = {
+            (cur_pose[0] - prev_pose[0]) / dt_cumsum.back(),
+            (cur_pose[1] - prev_pose[1]) / dt_cumsum.back(),
+            (cur_pose[2] - prev_pose[2]) / dt_cumsum.back()
+        };
+
+        // interpolate between poses
+        for (size_t idx=0; idx < dt_cumsum.size(); idx++) {
+            casadi::DM pose = casadi::DM::vertcat({
+                prev_pose[0] + segment_velocity[0] * dt_cumsum[idx],
+                prev_pose[1] + segment_velocity[1] * dt_cumsum[idx],
+                prev_pose[2] + segment_velocity[2] * dt_cumsum[idx]
+            });
+            X_init.push_back(pose);
+        }
+    }
+    // convert to casadi DM
+    casadi::DM X_init_DM = casadi::DM::vertcat(X_init);
+    return X_init_DM;
+}

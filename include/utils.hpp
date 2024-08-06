@@ -37,8 +37,10 @@ void displayProgressBar(double progress, int width = 150);
 
 // get initial intermediate points for warm start
 casadi::DM get_intermediate_points_init(const std::vector<std::vector<float>>& knot_points, const casadi::DM& T_init);
+casadi::DM linear_initial_path(const std::vector<std::vector<float>>& knot_points, const TimeInterval& time_intervals);
 
 // get time intervals for each segment and state point
 TimeInterval compute_time_intervals(const std::vector<std::vector<float>>& knot_points, float velocity, size_t n_timesteps);
+
 
 #endif // UTILS_HPP

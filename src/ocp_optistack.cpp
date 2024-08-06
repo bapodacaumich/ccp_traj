@@ -1,5 +1,6 @@
 #include "constraints.hpp"
 #include "ocp_optistack.hpp"
+#include "time_interval_struct.hpp"
 #include "utils.hpp"
 
 #include <casadi/casadi.hpp>
@@ -70,10 +71,35 @@ std::vector<casadi::DM> ocp_optistack(std::string vgd,
     size_t n_timesteps = 400;
 
     //compute time intervals for each optimized state
+    TimeInterval time_intervals = compute_time_intervals(knot_points, velocity, n_timesteps);
+    size_t n_timesteps = time_intervals.dt.size();
+    casadi::DM initial_path = linear_initial_path(knot_points, time_intervals);
 
     // initialize optistack
     auto opti = casadi::Opti();
 
-    // variables
-    size_t 
+    // optimization variables
+    casadi::MX X = opti.variable(n_timesteps+1, 6);
+    casadi::MX U = opti.variable(n_timesteps, 3);
+
+    // CONSTRAINTS
+    // integrate runge kutta using clohessy wiltshire ode
+    integrate_runge_kutta(X, U, time_intervals.dt, opti);
+
+    // constrain start pose
+    float min_start_distance = 0.5f; // meters
+    casadi::MX start_error = casadi::MX::vertcat({
+        X(0,0) - knot_points[0][0],
+        X(0,1) - knot_points[0][1],
+        X(0,2) - knot_points[0][2]
+    });
+    opti.subject_to(sumsqr(start_error) <= min_start_distance);
+
+    // impose thrust limit constraints
+    for (size_t i = 0; i < U.size1(); i++) {
+        opti.subject_to( U(i,0) * U(i,0) + U(i,1) * U(i,1) + U(i,2) * U(i,2) );
+    }
+
+    // compute fuel cost
+    casadi::MX fuel_cost = compute_fuel_cost(U, dt);
 }

@@ -33,4 +33,13 @@ void enforce_station_keepout(
     size_t nT=3
     );
 
+// define ode
+casadi::MX f(const casadi::MX& x, const casadi::MX& u);
+
+// integrate dynamics
+void integrate_runge_kutta(const casadi::MX& X, const casadi::MX& U, const std::vector<float>& dt, casadi::Opti& opti);
+
+// compute fuel cost
+casadi::MX compute_fuel_cost(const casadi::MX& U, const std::vector<float>& dt);
+
 #endif // CONSTRAINTS_HPP
