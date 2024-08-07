@@ -4,6 +4,7 @@
 #include <casadi/casadi.hpp>
 #include <string>
 #include <vector>
+#include "time_interval_struct.hpp"
 
 // Clohessy Wiltshire computation for casadi variables -- overload to handle casadi::MX for start and end
 casadi::MX cw_v_init(const std::vector<float>& start, casadi::MX& dx, casadi::MX& dy, casadi::MX& dz, casadi::MX& t);

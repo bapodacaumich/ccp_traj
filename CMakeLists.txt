@@ -105,16 +105,20 @@ file(GLOB HEADER_FILES_H ${CMAKE_SOURCE_DIR}/include/*.h)
 set(SOURCES
     ${CMAKE_SOURCE_DIR}/src/utils.cpp
     ${CMAKE_SOURCE_DIR}/src/constraints.cpp
+    ${CMAKE_SOURCE_DIR}/src/ocp_optistack.cpp
 )
 
-add_executable(cw_obs_ip_ocp ${SOURCES} ${CMAKE_SOURCE_DIR}/src/cw_obs_ip_ocp.cpp)
-target_link_libraries(cw_obs_ip_ocp ${CASADI_LIBRARIES} ipopt)
+add_executable(main ${SOURCES} ${CMAKE_SOURCE_DIR}/src/main.cpp)
+target_link_libraries(main ${CASADI_LIBRARIES} ipopt)
 
-add_executable(cw_obs_ocp ${SOURCES} ${CMAKE_SOURCE_DIR}/src/cw_obs_ocp.cpp)
-target_link_libraries(cw_obs_ocp ${CASADI_LIBRARIES} ipopt)
+# add_executable(cw_obs_ip_ocp ${SOURCES} ${CMAKE_SOURCE_DIR}/src/cw_obs_ip_ocp.cpp)
+# target_link_libraries(cw_obs_ip_ocp ${CASADI_LIBRARIES} ipopt)
 
-add_executable(cw_ocp ${SOURCES} ${CMAKE_SOURCE_DIR}/src/cw_ocp.cpp)
-target_link_libraries(cw_ocp ${CASADI_LIBRARIES} ipopt)
+# add_executable(cw_obs_ocp ${SOURCES} ${CMAKE_SOURCE_DIR}/src/cw_obs_ocp.cpp)
+# target_link_libraries(cw_obs_ocp ${CASADI_LIBRARIES} ipopt)
+
+# add_executable(cw_ocp ${SOURCES} ${CMAKE_SOURCE_DIR}/src/cw_ocp.cpp)
+# target_link_libraries(cw_ocp ${CASADI_LIBRARIES} ipopt)
 # file(COPY ${CMAKE_SOURCE_DIR}/data/ DESTINATION ${CMAKE_BINARY_DATA}/data)
 
 # casadi basic operations

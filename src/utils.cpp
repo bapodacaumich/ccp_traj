@@ -431,7 +431,7 @@ TimeInterval compute_time_intervals(const std::vector<std::vector<float>>& knot_
     float dt = total_time / n_timesteps; // regular timestep duration
 
     std::vector<float> dt_knot; // time between each knot point
-    std::vector<int> num_dt_per_interval; // number of timesteps between each knotpoint
+    std::vector<size_t> num_dt_per_interval; // number of timesteps between each knotpoint
     std::vector<float> extra_dt; // small 'extra' time step at the end of each knotpoint to knotpoint interval
     for (size_t i = 0; i < ds.size(); i++) {
         dt_knot.push_back(ds[i] / velocity);
@@ -455,11 +455,10 @@ TimeInterval compute_time_intervals(const std::vector<std::vector<float>>& knot_
 }
 
 casadi::DM linear_initial_path(const std::vector<std::vector<float>>& knot_points, const TimeInterval& time_intervals) {
-    std::vector<casadi::DM> X_init = {casadi::DM::vertcat({
-        knot_points[0][0],
-        knot_points[0][1],
-        knot_points[0][2]
-    })};
+    casadi::DM X_init = casadi::DM::zeros(time_intervals.dt.size()+1, 6);
+    X_init(0,0) = knot_points[0][0];
+    X_init(0,1) = knot_points[0][1];
+    X_init(0,2) = knot_points[0][2];
 
     for (size_t i = 0; i < knot_points.size()-1; i++) {
         std::vector<float> prev_pose = knot_points[i];
@@ -485,15 +484,10 @@ casadi::DM linear_initial_path(const std::vector<std::vector<float>>& knot_point
 
         // interpolate between poses
         for (size_t idx=0; idx < dt_cumsum.size(); idx++) {
-            casadi::DM pose = casadi::DM::vertcat({
-                prev_pose[0] + segment_velocity[0] * dt_cumsum[idx],
-                prev_pose[1] + segment_velocity[1] * dt_cumsum[idx],
-                prev_pose[2] + segment_velocity[2] * dt_cumsum[idx]
-            });
-            X_init.push_back(pose);
+            X_init(prev_idx + idx + 1,0) = prev_pose[0] + segment_velocity[0] * dt_cumsum[idx];
+            X_init(prev_idx + idx + 1,1) = prev_pose[1] + segment_velocity[1] * dt_cumsum[idx];
+            X_init(prev_idx + idx + 1,2) = prev_pose[2] + segment_velocity[2] * dt_cumsum[idx];
         }
     }
-    // convert to casadi DM
-    casadi::DM X_init_DM = casadi::DM::vertcat(X_init);
-    return X_init_DM;
+    return X_init;
 }
